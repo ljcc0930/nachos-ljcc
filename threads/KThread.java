@@ -445,6 +445,30 @@ public class KThread {
 		private static Alarm testAlarm = new Alarm();
     }
 
+    private static class CommTest implements Runnable {
+		CommTest(int which, int words) {
+			this.words = words;
+			this.which = which;
+		}
+	
+		public void run() {
+			if(words == 0) {
+				System.out.println("*** Thread " + which + " Listen start!!");
+				words = testComm.listen();
+				System.out.println("*** Thread " + which + " Listen " + words + " finished!!");
+			}
+			else {
+				System.out.println("*** Thread " + which + " Speak " + words + " start!!");
+				testComm.speak(words);
+				System.out.println("*** Thread " + which + " Speak " + words + " finished!!");
+			}
+		}
+
+		private int which;
+		private int words;
+		private static Communicator testComm = new Communicator();
+    }
+
     /**
      * Tests whether this module is working.
      */
@@ -484,6 +508,24 @@ public class KThread {
 	new KThread(new AlarmTest(4, 2300)).setName("forked thread").fork();
 	new KThread(new AlarmTest(5, 1000)).setName("forked thread").fork();
 	new AlarmTest(6, 6000).run();
+    }
+    public static void selfTest_Communicator() {
+	Lib.debug(dbgThread, "Enter KThread.selfTest_Alarm");
+	
+	KThread a = new KThread(new CommTest(1, 111)).setName("forked thread");
+	KThread b = new KThread(new CommTest(2, 222)).setName("forked thread");
+	KThread c = new KThread(new CommTest(3, 0)).setName("forked thread");
+	KThread d = new KThread(new CommTest(4, 0)).setName("forked thread");
+	KThread e = new KThread(new CommTest(5, 0)).setName("forked thread");
+	KThread f = new KThread(new CommTest(6, 333)).setName("forked thread");
+	KThread g = new KThread(new CommTest(7, 11)).setName("forked thread");
+	KThread h = new KThread(new CommTest(8, 22)).setName("forked thread");
+	KThread i = new KThread(new CommTest(9, 0)).setName("forked thread");
+	KThread j = new KThread(new CommTest(10, 0)).setName("forked thread");
+	a.fork();b.fork();c.fork();d.fork();e.fork();
+	f.fork();g.fork();h.fork();i.fork();j.fork();
+	a.join();b.join();c.join();d.join();e.join();
+	f.join();g.join();h.join();i.join();j.join();
     }
 
     private static final char dbgThread = 't';

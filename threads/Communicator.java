@@ -34,11 +34,12 @@ public class Communicator {
     public void speak(int word) {
     	communicatorLock.acquire();
     	
-    	if(listeners == 0) {
+    	while(listeners == 0 || dialog != null) {
     		waitingSpeaker.sleep();
     	}
     	dialog = new Integer(word);
     	waitingListener.wake();
+    	listeners--;
     	
     	communicatorLock.release();
     }
@@ -52,19 +53,17 @@ public class Communicator {
     public int listen() {
     	communicatorLock.acquire();
     	
-    	listeners++;
-    	
-    	waitingSpeaker.wake();
-    	
-    	if(dialog == null) {
+	    listeners++;
+    	while(dialog == null) {
+    		waitingSpeaker.wake();
 	    	waitingListener.sleep();
     	}
     	
     	int ret = dialog;
     	dialog = null;
-    	communicatorLock.release();
+    	waitingSpeaker.wake();
     	
-    	listeners--;
+    	communicatorLock.release();
     	
 		return ret;
     }
