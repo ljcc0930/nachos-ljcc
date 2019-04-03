@@ -474,6 +474,7 @@ public class KThread {
      */
     public static void selfTest_join() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_join");
+	System.out.println("Enter KThread.selfTest_join");
 	
 	KThread a = new KThread(new PingTest(1)).setName("forked thread");
 	KThread b = new KThread(new PingTest(2)).setName("forked thread");
@@ -484,6 +485,7 @@ public class KThread {
     }
     public static void selfTest_Condition2() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_Condition2");
+	System.out.println("Enter KThread.selfTest_Condition2");
 	
 	KThread a = new KThread(new ConTest(1)).setName("forked thread");
 	KThread b = new KThread(new ConTest(2)).setName("forked thread");
@@ -501,6 +503,7 @@ public class KThread {
     }
     public static void selfTest_Alarm() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_Alarm");
+	System.out.println("Enter KThread.selfTest_Alarm");
 	
 	new KThread(new AlarmTest(1, 500)).setName("forked thread").fork();
 	new KThread(new AlarmTest(2, 2000)).setName("forked thread").fork();
@@ -510,7 +513,8 @@ public class KThread {
 	new AlarmTest(6, 6000).run();
     }
     public static void selfTest_Communicator() {
-	Lib.debug(dbgThread, "Enter KThread.selfTest_Alarm");
+	Lib.debug(dbgThread, "Enter KThread.selfTest_Communicator");
+	System.out.println("Enter KThread.selfTest_Communicator");
 	
 	KThread a = new KThread(new CommTest(1, 111)).setName("forked thread");
 	KThread b = new KThread(new CommTest(2, 222)).setName("forked thread");
