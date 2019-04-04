@@ -4,6 +4,7 @@ import nachos.machine.*;
 
 import java.util.LinkedList;
 
+
 /**
  * A KThread is a thread that can be used to execute Nachos kernel code. Nachos
  * allows multiple threads to run concurrently.
@@ -59,6 +60,9 @@ public class KThread {
 
 	    createIdleThread();
 	}
+    boolean intStatus = Machine.interrupt().disable();
+    threadsToJoin.acquire(this);
+    Machine.interrupt().restore(intStatus);
     }
 
     /**
@@ -193,10 +197,13 @@ public class KThread {
 	Lib.assertTrue(toBeDestroyed == null);
 	toBeDestroyed = currentThread;
 
-
 	currentThread.status = statusFinished;
 	
-	currentThread.finishedSemaphore.V();
+	//currentThread.finishedSemaphore.V();
+    KThread toJoin;
+    while ((toJoin = currentThread.threadsToJoin.nextThread()) != null)
+        if (toJoin.status != statusReady)
+            toJoin.ready();
 	
 	sleep();
     }
@@ -280,10 +287,18 @@ public class KThread {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
 	Lib.assertTrue(this != currentThread);
+
+    if (status == statusFinished)
+        return ;
 	
 	boolean intStatus = Machine.interrupt().disable();
 	
-	finishedSemaphore.P();
+    if (status == statusNew)
+        ready();
+
+    threadsToJoin.waitForAccess( currentThread );
+    sleep();
+	//finishedSemaphore.P();
 	
 	Machine.interrupt().restore(intStatus);
 
@@ -471,9 +486,72 @@ public class KThread {
 		private static Communicator testComm = new Communicator();
     }
 
+    private static class PrioTestLock implements Runnable {
+        PrioTestLock(Lock L) {
+            lock = L;
+        }
+
+        public void run() {
+            System.out.println( "Acquiring L" );
+            lock.acquire();
+            KThread b = new KThread(new Runnable() {
+                public void run() {System.out.println( "Acquiring L" ); lock.acquire(); lock.release(); }
+            }).setName("Subthread");
+            b.fork();
+
+            boolean state = Machine.interrupt().disable();
+            ThreadedKernel.scheduler.setPriority( b, 3 );
+
+            currentThread.yield();
+            System.out.print( "Priority of " );
+            System.out.print( currentThread );
+            System.out.print( ": " );
+            System.out.println( ThreadedKernel.scheduler.getEffectivePriority( currentThread ) );
+
+            System.out.print( "Priority of " );
+            System.out.print( b );
+            System.out.print( ": " );
+            System.out.println( ThreadedKernel.scheduler.getEffectivePriority( b ) );
+            Machine.interrupt().restore(state);
+            lock.release();
+
+            }
+
+        private Lock lock = new Lock();
+        private int priority;
+    }
+
     /**
      * Tests whether this module is working.
      */
+
+    public static void selfTest_Priority() {
+        System.out.println( "Enter KThread.selfTest_Priority" );
+        Lock lock = new Lock();
+        KThread a = new KThread( new PrioTestLock(lock) ).setName("thread A");
+        a.fork();
+        a.join();
+        KThread c = new KThread( new PrioTestLock(lock) ).setName("thread C");
+        c.fork();
+
+        boolean state = Machine.interrupt().disable();
+        ThreadedKernel.scheduler.setPriority( currentThread, 7 );
+        Machine.interrupt().restore(state);
+        c.join();
+
+        state = Machine.interrupt().disable();
+        System.out.print( "Priority of " );
+        System.out.print( currentThread );
+        System.out.print( ": " );
+        System.out.println( ThreadedKernel.scheduler.getEffectivePriority( currentThread ) );
+
+        System.out.print( "Priority of " );
+        System.out.print( c );
+        System.out.print( ": " );
+        System.out.println( ThreadedKernel.scheduler.getEffectivePriority( c ) );
+        Machine.interrupt().restore(state);
+    }
+
     public static void selfTest_join() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_join");
 	System.out.println("Enter KThread.selfTest_join");
@@ -506,6 +584,12 @@ public class KThread {
 	d.fork();
 	b.fork();
 	new ConTest(0).run();
+    a.join();
+    b.join();
+    c.join();
+    d.join();
+    e.join();
+    f.join();
     }
     public static void selfTest_Alarm() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_Alarm");
@@ -576,4 +660,6 @@ public class KThread {
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
     private Semaphore finishedSemaphore = new Semaphore(0);
+
+    private ThreadQueue threadsToJoin = ThreadedKernel.scheduler.newThreadQueue(true);
 }
