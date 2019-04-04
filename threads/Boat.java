@@ -12,11 +12,11 @@ public class Boat
 //	System.out.println("\n ***Testing Boats with only 2 children***");
 //	begin(0, 2, b);
 
-//	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
-//  	begin(1, 2, b);
+	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
+  	begin(1, 2, b);
 
-  	System.out.println("\n ***Testing Boats with 10 children, 10 adults***");
-  	begin(10, 10, b);
+//  	System.out.println("\n ***Testing Boats with 10 children, 10 adults***");
+//  	begin(10, 10, b);
     }
 
     public static void begin( int adults, int children, BoatGrader b )
@@ -65,14 +65,24 @@ public class Boat
 		
 		adultMembers++;
 		
-		while(boatTarget || childMembers > 1 || onBoat > 0 || !childArr) {
-			oAdult.sleep();
-		}
+		while(true) {
+			while(boatTarget || childMembers > 1 || onBoat > 0) {
+				oAdult.sleep();
+			}
 		
-		bg.AdultRowToMolokai();
-		boatTarget = true;
-		adultMembers--;
-		mChild.wake();
+			bg.AdultRowToMolokai();
+			boatTarget = true;
+			adultMembers--;
+			if(!childArr) {
+				bg.AdultRowToOahu();
+				boatTarget = false;
+				adultMembers++;
+				oAdult.sleep();
+				continue;
+			}
+			mChild.wake();
+			break;
+		}
 	
 		lock.release();
     }
