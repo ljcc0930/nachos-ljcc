@@ -196,7 +196,7 @@ public class KThread {
 
 	currentThread.status = statusFinished;
 	
-	finishedSemaphore.V();
+	currentThread.finishedSemaphore.V();
 	
 	sleep();
     }
@@ -392,12 +392,13 @@ public class KThread {
     }
 
     private static class PingTest implements Runnable {
-	PingTest(int which) {
+	PingTest(int which, int times) {
 	    this.which = which;
+	    this.times = times;
 	}
 	
 	public void run() {
-	    for (int i=0; i<5; i++) {
+	    for (int i=0; i<times; i++) {
 		System.out.println("*** thread " + which + " looped "
 				   + i + " times");
 		currentThread.yield();
@@ -405,6 +406,7 @@ public class KThread {
 	}
 
 	private int which;
+	private int times;
     }
 
     private static class ConTest implements Runnable {
@@ -476,12 +478,16 @@ public class KThread {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_join");
 	System.out.println("Enter KThread.selfTest_join");
 	
-	KThread a = new KThread(new PingTest(1)).setName("forked thread");
-	KThread b = new KThread(new PingTest(2)).setName("forked thread");
+	KThread a = new KThread(new PingTest(1, 4)).setName("forked thread 1");
+	KThread b = new KThread(new PingTest(2, 10)).setName("forked thread 2");
+	KThread c = new KThread(new PingTest(3, 6)).setName("forked thread 3");
 	a.fork();
 	b.fork();
+	c.fork();
+	c.join();
+	new PingTest(0, 3).run();
 	a.join();
-	new PingTest(0).run();
+	b.join();
     }
     public static void selfTest_Condition2() {
 	Lib.debug(dbgThread, "Enter KThread.selfTest_Condition2");
@@ -569,5 +575,5 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
-    private static Semaphore finishedSemaphore = new Semaphore(0);
+    private Semaphore finishedSemaphore = new Semaphore(0);
 }
