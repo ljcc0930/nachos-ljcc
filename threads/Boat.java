@@ -9,14 +9,14 @@ public class Boat
     {
 	BoatGrader b = new BoatGrader();
 	
-	System.out.println("\n ***Testing Boats with only 2 children***");
-	begin(0, 2, b);
+//	System.out.println("\n ***Testing Boats with only 2 children***");
+//	begin(0, 2, b);
 
 //	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
 //  	begin(1, 2, b);
 
-//  	System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
-//  	begin(3, 3, b);
+  	System.out.println("\n ***Testing Boats with 10 children, 10 adults***");
+  	begin(10, 10, b);
     }
 
     public static void begin( int adults, int children, BoatGrader b )
@@ -29,15 +29,24 @@ public class Boat
 	
 	// Create threads here. See section 3.4 of the Nachos for Java
 	// Walkthrough linked from the projects page.
-
-	Runnable r = new Runnable() {
-	    public void run() {
-                SampleItinerary();
-            }
-        };
-        KThread t = new KThread(r);
-        t.setName("Sample Boat Thread");
-        t.fork();
+	
+		lock.acquire();
+		for(int it = 0; it < children; it++) {
+		    new KThread(new Runnable() {
+			public void run() {
+		            ChildItinerary();
+		        }
+		    }).setName("Child Boat Thread " + it).fork();
+		}
+		for(int it = 0; it < adults; it++) {
+		    new KThread(new Runnable() {
+			public void run() {
+		            AdultItinerary();
+		        }
+		    }).setName("Adult Boat Thread " + it).fork();
+		}
+		mainSleep.sleep();
+		lock.release();
 
     }
 
@@ -52,12 +61,78 @@ public class Boat
 	       bg.AdultRowToMolokai();
 	   indicates that an adult has rowed the boat across to Molokai
 	*/
+		lock.acquire();
+		
+		adultMembers++;
+		
+		while(boatTarget || childMembers > 1 || onBoat > 0 || !childArr) {
+			oAdult.sleep();
+		}
+		
+		bg.AdultRowToMolokai();
+		boatTarget = true;
+		adultMembers--;
+		mChild.wake();
+	
+		lock.release();
     }
 
     static void ChildItinerary()
     {
 	bg.initializeChild(); //Required for autograder interface. Must be the first thing called.
 	//DO NOT PUT ANYTHING ABOVE THIS LINE. 
+		boolean target = false;
+		lock.acquire();
+		
+		childMembers++;
+		while(true) {
+			if(target) {
+				while(!boatTarget) {
+					mChild.sleep();
+				}
+				if(finished) {
+					break;
+				}
+				bg.ChildRowToOahu();
+				target = false;
+				childMembers++;
+				boatTarget = false;
+				onBoat = 0;
+				oAdult.wake();
+				oChild.wake();
+			}
+			else {
+				while(boatTarget || childMembers + onBoat < 2 || onBoat >= 2) {
+					oChild.sleep();
+				}
+				if(onBoat == 0) {
+					onBoat++;
+					childMembers--;
+					bg.ChildRowToMolokai();
+					while(onBoat < 2) {
+						oChild.wake();
+						oBoat.sleep();
+					}
+					target = true;
+					boatTarget = true;
+					childArr = true;
+					mChild.wake();
+				}
+				else {
+					onBoat++;
+					childMembers--;
+					if(childMembers == 0 && adultMembers == 0) {
+						finished = true;
+						mainSleep.wake();
+					}
+					bg.ChildRideToMolokai();
+					oBoat.wake();
+					target = true;
+				}
+			}
+		}
+		
+		lock.release();
     }
 
     static void SampleItinerary()
@@ -72,5 +147,18 @@ public class Boat
 	bg.AdultRideToMolokai();
 	bg.ChildRideToMolokai();
     }
+    
+    static Lock lock = new Lock();
+    static boolean boatTarget = false;
+    static boolean finished = false;
+    static int childMembers;
+    static int adultMembers;
+    static boolean childArr = false;
+    static Condition2 oChild = new Condition2(lock);
+    static Condition2 mChild = new Condition2(lock);
+    static Condition2 oAdult = new Condition2(lock);
+    static Condition2 mainSleep = new Condition2(lock);
+    static Condition2 oBoat = new Condition2(lock);
+    static int onBoat;
     
 }
