@@ -3,7 +3,7 @@
 int atoi(const char *s) {
   int result=0, sign=1;
 
-  if (*s == -1) {
+  if (*s == '-') {
     sign = -1;
     s++;
   }

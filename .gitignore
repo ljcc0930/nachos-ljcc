@@ -1,3 +1,4 @@
 *.class
 *.coff
 *.o
+test/libnachos.a
