@@ -15,8 +15,8 @@ public class Communicator {
      */
     public Communicator() {
     	communicatorLock = new Lock();
-    	waitingListener = new Condition2(communicatorLock);
-    	waitingSpeaker = new Condition2(communicatorLock);
+    	waitingListener = new Condition(communicatorLock);
+    	waitingSpeaker = new Condition(communicatorLock);
     	dialog = null;
     	listeners = 0;
     }
@@ -68,8 +68,8 @@ public class Communicator {
 		return ret;
     }
     private Lock communicatorLock;
-    private Condition2 waitingListener;
-    private Condition2 waitingSpeaker;
+    private Condition waitingListener;
+    private Condition waitingSpeaker;
     private Integer dialog;
     private int listeners;
 }

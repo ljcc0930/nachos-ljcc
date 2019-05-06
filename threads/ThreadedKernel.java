@@ -49,7 +49,7 @@ public class ThreadedKernel extends Kernel {
 	//KThread.selfTest_join();
 	//KThread.selfTest_Condition2();
 	//KThread.selfTest_Alarm();
-	KThread.selfTest_Communicator();
+	//KThread.selfTest_Communicator();
 	// KThread.selfTest();
     //KThread.selfTest_Priority();
 	// Semaphore.selfTest();
